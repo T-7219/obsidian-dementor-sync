@@ -12,6 +12,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Selective sync for specific folders
 - Performance optimizations for large vaults
 
+## [2.0.0] - 2025-05-04
+
+### ✨ Added
+- S3 storage support for Amazon S3 and compatible services (MinIO, Ceph)
+- Support for selecting between WebDAV or S3 synchronization methods
+- User interface for configuring S3 storage (URL, bucket, access keys)
+- Automatic detection of storage provider type in settings UI
+- Enhanced diagnostic tools for S3 connection troubleshooting
+- Improved authentication handling for various S3-compatible services
+- Compatible with Ceph Object Storage and other S3 API implementations
+
+### 🔄 Changed
+- Completely refactored storage client architecture to support multiple providers
+- Updated synchronization orchestrator to work with different storage backends
+- Enhanced settings UI with storage method selection dropdown
+- Improved error handling for different storage provider types
+
+### 🔒 Security
+- Extended secure credential handling to support S3 authentication
+- Added secure storage for S3 credentials
+
 ## [1.0.1] - 2025-05-04
 
 ### 🐛 Fixed

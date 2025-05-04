@@ -1,7 +1,11 @@
 import { Notice, TFile } from 'obsidian';
 import type { FileStat } from 'webdav';
+import type { S3FileStat } from './s3-client';
 import type DementorSyncPlugin from './main';
 import { FileMetadata } from './state-manager';
+
+// Обобщенный тип для файла из разных провайдеров
+type StorageFile = FileStat | S3FileStat;
 
 export class SyncOrchestrator {
     private plugin: DementorSyncPlugin;
@@ -34,6 +38,18 @@ export class SyncOrchestrator {
             console.error('Sync failed:', error);
             throw error;
         }
+    }
+
+    /**
+     * Получить клиент в зависимости от выбранного метода синхронизации
+     */
+    private getStorageClient() {
+        if (this.plugin.settings.syncMethod === 'webdav') {
+            return this.plugin.webdavClient;
+        } else if (this.plugin.settings.syncMethod === 's3') {
+            return this.plugin.s3Client;
+        }
+        throw new Error('Unknown sync method selected');
     }
 
     /**
@@ -89,8 +105,9 @@ export class SyncOrchestrator {
                 content, file.path
             );
             
-            // Upload to WebDAV server
-            await this.plugin.webdavClient.uploadFile(file.path, encryptedData, encryptedName);
+            // Получаем активный клиент и загружаем файл
+            const client = this.getStorageClient();
+            await client.uploadFile(file.path, encryptedData, encryptedName);
             
             // Update file metadata in state
             await this.plugin.stateManager.storeFileMetadata(file.path, {
@@ -122,8 +139,9 @@ export class SyncOrchestrator {
                 return;
             }
             
-            // Delete from WebDAV server
-            await this.plugin.webdavClient.deleteFile(metadata.encryptedName);
+            // Получаем активный клиент и удаляем файл
+            const client = this.getStorageClient();
+            await client.deleteFile(metadata.encryptedName);
             
             // Remove from state
             await this.plugin.stateManager.removeFileMetadata(path);
@@ -142,8 +160,11 @@ export class SyncOrchestrator {
         console.log('Synchronizing with remote server...');
         
         try {
+            // Получаем активный клиент
+            const client = this.getStorageClient();
+            
             // 1. Get list of all remote files
-            const remoteFiles = await this.plugin.webdavClient.listFiles();
+            const remoteFiles = await client.listFiles();
             
             // 2. Process remote files
             await this.processRemoteFiles(remoteFiles);
@@ -157,9 +178,9 @@ export class SyncOrchestrator {
     /**
      * Process the list of remote files
      */
-    private async processRemoteFiles(remoteFiles: FileStat[]): Promise<void> {
+    private async processRemoteFiles(remoteFiles: StorageFile[]): Promise<void> {
         // Map of encrypted names to stats, for quick lookup
-        const remoteFileMap = new Map<string, FileStat>();
+        const remoteFileMap = new Map<string, StorageFile>();
         for (const file of remoteFiles) {
             // Extract just the filename, not the full path
             const fileName = file.basename || file.filename;
@@ -213,8 +234,9 @@ export class SyncOrchestrator {
                 throw new Error(`No metadata found for ${localPath}`);
             }
             
-            // Download encrypted file
-            const encryptedData = await this.plugin.webdavClient.downloadFile(encryptedName);
+            // Получаем активный клиент и скачиваем файл
+            const client = this.getStorageClient();
+            const encryptedData = await client.downloadFile(encryptedName);
             
             // Decrypt the file
             const decryptedData = await this.plugin.encryptionModule.decryptFile(encryptedData, metadata.iv);
@@ -264,8 +286,9 @@ export class SyncOrchestrator {
         console.log(`Handling new remote file: ${encryptedName}`);
         
         try {
-            // Download encrypted file
-            const encryptedData = await this.plugin.webdavClient.downloadFile(encryptedName);
+            // Получаем активный клиент и скачиваем файл
+            const client = this.getStorageClient();
+            const encryptedData = await client.downloadFile(encryptedName);
             
             // Create a temporary path for files we don't know the original name of
             const tempPath = `dementor-sync-new/${encryptedName}.md`;

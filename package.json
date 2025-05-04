@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "argon2-browser": "^1.18.0",
+    "aws-sdk": "^2.1461.0",
     "buffer": "^6.0.3",
     "webdav": "^5.1.0"
   }

@@ -4,7 +4,7 @@
 
 ![Dementor Sync Banner](https://raw.githubusercontent.com/T-7219/obsidian-dementor-sync/main/assets/banner.png)
 
-[![GitHub release](https://img.shields.io/badge/version-v1.0.1-4684b1?style=flat-square)](https://github.com/T-7219/obsidian-dementor-sync/releases/latest)
+[![GitHub release](https://img.shields.io/badge/version-v2.0.0-4684b1?style=flat-square)](https://github.com/T-7219/obsidian-dementor-sync/releases/latest)
 [![GitHub license](https://img.shields.io/github/license/T-7219/obsidian-dementor-sync?style=flat-square&color=4684b1)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/T-7219/obsidian-dementor-sync/total?color=4684b1&style=flat-square)](https://github.com/T-7219/obsidian-dementor-sync/releases)
 [![CodeFactor](https://img.shields.io/codefactor/grade/github/T-7219/obsidian-dementor-sync?style=flat-square)](https://www.codefactor.io/repository/github/T-7219/obsidian-dementor-sync)
@@ -12,10 +12,10 @@
 
 </div>
 
-Secure your knowledge with the most private and secure synchronization solution for Obsidian. **Dementor Sync** provides end-to-end encrypted WebDAV synchronization to keep your notes private and securely accessible across all your devices.
+Secure your knowledge with the most private and secure synchronization solution for Obsidian. **Dementor Sync** provides end-to-end encrypted synchronization via WebDAV or S3 storage to keep your notes private and securely accessible across all your devices.
 
 > [!TIP]
-> Unlike the official Obsidian Sync, Dementor Sync gives you **full control** over your data with true end-to-end encryption and your choice of WebDAV server!
+> Unlike the official Obsidian Sync, Dementor Sync gives you **full control** over your data with true end-to-end encryption and your choice of storage provider!
 
 ## ✨ Key Features
 
@@ -23,7 +23,7 @@ Secure your knowledge with the most private and secure synchronization solution 
   <tr>
     <td width="50%">
       <h3>🔒 Military-Grade Encryption</h3>
-      <p>AES-256-GCM encryption with Argon2id key derivation ensures your data is secure even if your WebDAV server is compromised.</p>
+      <p>AES-256-GCM encryption with Argon2id key derivation ensures your data is secure even if your storage server is compromised.</p>
     </td>
     <td width="50%">
       <h3>🔄 Bidirectional Sync</h3>
@@ -32,8 +32,8 @@ Secure your knowledge with the most private and secure synchronization solution 
   </tr>
   <tr>
     <td width="50%">
-      <h3>🌐 WebDAV Compatibility</h3>
-      <p>Works with any WebDAV server including Nextcloud, ownCloud, Box, Yandex.Disk, or your personal server.</p>
+      <h3>🌐 Multiple Storage Options</h3>
+      <p>Choose between WebDAV and S3-compatible storage, including Nextcloud, ownCloud, Amazon S3, MinIO, and Ceph.</p>
     </td>
     <td width="50%">
       <h3>⚡ Real-time Change Detection</h3>
@@ -57,7 +57,7 @@ Secure your knowledge with the most private and secure synchronization solution 
 - [Usage](#-usage)
 - [Configuration](#-configuration)
 - [Security Features](#-security-features)
-- [Supported WebDAV Services](#-supported-webdav-services)
+- [Supported Storage Services](#-supported-storage-services)
 - [FAQ](#-frequently-asked-questions)
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
@@ -89,7 +89,8 @@ Secure your knowledge with the most private and secure synchronization solution 
 1. After installation, a lock icon 🔒 will appear in your left sidebar
 2. Click the icon to open the Dementor Sync panel
 3. Configure your connection by clicking the ⚙️ icon or going to **Settings** → **Dementor Sync**:
-   - Enter your WebDAV server URL and credentials
+   - Choose your preferred storage method (WebDAV or S3)
+   - Enter your connection details based on the selected storage method
    - Create a strong encryption password (critical for data security!)
    - Configure sync settings and exclusions
    - Test your connection to ensure everything is working correctly
@@ -105,9 +106,14 @@ Secure your knowledge with the most private and secure synchronization solution 
 
 | Setting | Description |
 |---------|-------------|
-| **WebDAV URL** | The URL of your WebDAV server (including path) |
-| **Username** | Your WebDAV server username |
-| **Password** | Your WebDAV server password |
+| **Sync Method** | Choose between WebDAV or S3 storage |
+| **WebDAV URL** | The URL of your WebDAV server (when WebDAV is selected) |
+| **WebDAV Username** | Your WebDAV server username |
+| **WebDAV Password** | Your WebDAV server password |
+| **S3 Endpoint URL** | URL of your S3-compatible storage (when S3 is selected) |
+| **S3 Bucket Name** | Name of the S3 bucket to use |
+| **S3 Access Key** | Access key for S3 authentication |
+| **S3 Secret Key** | Secret key for S3 authentication |
 | **Encryption Password** | Password for encrypting/decrypting your data |
 | **Auto-sync** | Toggle automatic synchronization |
 | **Sync Interval** | How often automatic sync occurs (in minutes) |
@@ -117,12 +123,14 @@ Secure your knowledge with the most private and secure synchronization solution 
 
 ### Connection Diagnostics
 
-If you're having trouble connecting to your WebDAV server, the plugin now offers enhanced diagnostics:
+If you're having trouble connecting to your storage service, the plugin offers enhanced diagnostics:
 
 1. Go to **Settings** → **Dementor Sync**
-2. Click the **Test Connection** button to run a comprehensive diagnostics check
-3. The plugin will display detailed information about any connection issues
-4. Use the diagnostic information to troubleshoot and resolve connection problems
+2. Select your storage method (WebDAV or S3)
+3. Fill in your connection details
+4. Click the **Test Connection** button to run a comprehensive diagnostics check
+5. The plugin will display detailed information about any connection issues
+6. Use the diagnostic information to troubleshoot and resolve connection problems
 
 ## 🛡️ Security Features
 
@@ -131,29 +139,52 @@ If you're having trouble connecting to your WebDAV server, the plugin now offers
 - **Modern Cryptography**: AES-256-GCM for encryption, Argon2id for key derivation
 - **Encrypted Filenames**: Even filenames are encrypted to protect your privacy
 - **No Telemetry**: Your data and usage patterns are never tracked or reported
+- **Secure Credential Management**: All provider credentials are securely stored
 
-## 🔄 Supported WebDAV Services
+## 🔄 Supported Storage Services
 
-Dementor Sync works with a wide range of WebDAV services, including specific optimizations for:
+Dementor Sync works with a variety of storage services:
 
-### Yandex.Disk
+### WebDAV Services
+
+#### Yandex.Disk
 - Automatically detects Yandex.WebDAV servers
 - Uses the appropriate path structure (`disk:/ObsidianSync/`)
 - Implements extended error handling for Yandex-specific responses
 - **URL**: `https://webdav.yandex.ru`
 
-### Nextcloud/ownCloud
+#### Nextcloud/ownCloud
 - Standard WebDAV compatibility
 - **URL format**: `https://your-nextcloud-instance.com/remote.php/webdav/`
 
-### Box
+#### Box
 - Standard WebDAV compatibility
 - **URL format**: `https://dav.box.com/dav`
 
-### Generic WebDAV Servers
+#### Generic WebDAV Servers
 - Compatible with any server following the WebDAV standard
 - Adjustable timeouts for slower connections
 - Detailed connection diagnostics
+
+### S3 Compatible Services (New in v2.0.0)
+
+#### Amazon S3
+- Native S3 protocol support
+- **URL format**: `https://s3.region.amazonaws.com`
+
+#### MinIO
+- Compatible with S3 API
+- Self-hosted or cloud-based options
+- **URL format**: `https://your-minio-server.com`
+
+#### Ceph Object Storage
+- S3-compatible API for object storage
+- Works with both public and private Ceph deployments
+- **URL example**: `https://s3.ru1.storage.beget.cloud`
+
+#### Other S3-Compatible Services
+- Compatible with any service implementing the S3 API
+- Includes Wasabi, DigitalOcean Spaces, Backblaze B2, etc.
 
 ## ❓ Frequently Asked Questions
 
@@ -173,18 +204,23 @@ No, you should use either Dementor Sync or Obsidian Sync, but not both simultane
 </details>
 
 <details>
-<summary><b>What WebDAV providers are recommended?</b></summary>
-We recommend Nextcloud (self-hosted or through a provider), pCloud, Box, or Yandex.Disk for their reliable WebDAV implementations.
+<summary><b>Which storage provider should I choose?</b></summary>
+It depends on your needs. WebDAV is widely supported and often simpler to configure, while S3 offers better scalability and may be more cost-effective for larger vaults. We recommend Nextcloud for WebDAV and MinIO or Ceph for S3.
 </details>
 
 <details>
-<summary><b>I'm having connection issues with Yandex.WebDAV, what should I do?</b></summary>
-The plugin now features enhanced diagnostics for Yandex.WebDAV connections. Test your connection in settings and check the detailed error messages. Make sure you're using the correct URL (https://webdav.yandex.ru) and valid credentials.
+<summary><b>Can I switch between WebDAV and S3 storage?</b></summary>
+Yes, but it requires re-syncing your vault. Export your vault first, change providers, then sync again.
 </details>
 
 <details>
-<summary><b>Why am I getting path-related errors with WebDAV?</b></summary>
-Different WebDAV servers handle paths differently. As of v1.0.1, the plugin automatically detects specific providers (like Yandex.WebDAV) and adjusts path handling accordingly.
+<summary><b>I'm having connection issues with S3, what should I do?</b></summary>
+The plugin features enhanced diagnostics for S3 connections. Test your connection in settings and check the detailed error messages. Make sure you're using the correct endpoint URL, bucket name, and valid access/secret keys.
+</details>
+
+<details>
+<summary><b>Do I need to use AWS S3 specifically?</b></summary>
+No, any S3-compatible storage provider will work, including self-hosted options like MinIO or Ceph.
 </details>
 
 ## 🗺️ Roadmap

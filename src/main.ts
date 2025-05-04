@@ -1,6 +1,7 @@
-import { App, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { DementorSyncSettings, DEFAULT_SETTINGS } from './settings';
+import { App, Notice, Plugin, PluginSettingTab, Setting, DropdownComponent } from 'obsidian';
+import { DementorSyncSettings, DEFAULT_SETTINGS, SyncMethod } from './settings';
 import { WebDAVClient } from './webdav-client';
+import { S3Client } from './s3-client';
 import { EncryptionModule } from './encryption';
 import { StateManager } from './state-manager';
 import { ChangeDetector } from './change-detector';
@@ -10,6 +11,7 @@ import { SyncStatusBar } from './ui/status-bar';
 export default class DementorSyncPlugin extends Plugin {
 	settings: DementorSyncSettings;
 	webdavClient: WebDAVClient;
+	s3Client: S3Client;
 	encryptionModule: EncryptionModule;
 	stateManager: StateManager;
 	changeDetector: ChangeDetector;
@@ -25,6 +27,7 @@ export default class DementorSyncPlugin extends Plugin {
 		this.stateManager = new StateManager(this);
 		this.encryptionModule = new EncryptionModule(this);
 		this.webdavClient = new WebDAVClient(this);
+		this.s3Client = new S3Client(this);
 		this.changeDetector = new ChangeDetector(this);
 		this.syncOrchestrator = new SyncOrchestrator(this);
 		this.statusBar = new SyncStatusBar(this);
@@ -36,11 +39,21 @@ export default class DementorSyncPlugin extends Plugin {
 				return;
 			}
 
-			if (!this.settings.webdavUrl || !this.settings.webdavUsername || !this.settings.webdavPassword || !this.settings.encryptionPassword) {
-				new Notice('Please configure Dementor Sync settings first');
+			// Проверка настроек в зависимости от метода синхронизации
+			if (this.settings.syncMethod === 'webdav') {
+				if (!this.settings.webdavUrl || !this.settings.webdavUsername || !this.settings.webdavPassword || !this.settings.encryptionPassword) {
+					new Notice('Please configure WebDAV settings first');
 					// Open settings
-				this.openSettingTab();
-				return;
+					this.openSettingTab();
+					return;
+				}
+			} else if (this.settings.syncMethod === 's3') {
+				if (!this.settings.s3Url || !this.settings.s3Bucket || !this.settings.s3AccessKey || !this.settings.s3SecretKey || !this.settings.encryptionPassword) {
+					new Notice('Please configure S3 settings first');
+					// Open settings
+					this.openSettingTab();
+					return;
+				}
 			}
 
 			this.syncNow();
@@ -78,6 +91,10 @@ export default class DementorSyncPlugin extends Plugin {
 		// Update components that might depend on settings
 		if (this.webdavClient) {
 			this.webdavClient.updateConfig();
+		}
+		
+		if (this.s3Client) {
+			this.s3Client.updateConfig();
 		}
 		
 		// Reconfigure auto-sync
@@ -146,10 +163,17 @@ export default class DementorSyncPlugin extends Plugin {
 			return;
 		}
 		
-		// Validate settings
-		if (!this.settings.webdavUrl || !this.settings.webdavUsername || !this.settings.webdavPassword || !this.settings.encryptionPassword) {
-			new Notice('Please configure Dementor Sync settings first');
-			return;
+		// Validate settings based on sync method
+		if (this.settings.syncMethod === 'webdav') {
+			if (!this.settings.webdavUrl || !this.settings.webdavUsername || !this.settings.webdavPassword || !this.settings.encryptionPassword) {
+				new Notice('Please configure WebDAV settings first');
+				return;
+			}
+		} else if (this.settings.syncMethod === 's3') {
+			if (!this.settings.s3Url || !this.settings.s3Bucket || !this.settings.s3AccessKey || !this.settings.s3SecretKey || !this.settings.encryptionPassword) {
+				new Notice('Please configure S3 settings first');
+				return;
+			}
 		}
 		
 		try {
@@ -170,10 +194,19 @@ export default class DementorSyncPlugin extends Plugin {
 		}
 	}
 	
+	// Тестирование соединения в зависимости от выбранного метода синхронизации
 	async testConnection(): Promise<boolean> {
 		try {
 			this.statusBar.setStatus('testing');
-			const isConnected = await this.webdavClient.testConnection();
+			
+			let isConnected = false;
+			
+			if (this.settings.syncMethod === 'webdav') {
+				isConnected = await this.webdavClient.testConnection();
+			} else if (this.settings.syncMethod === 's3') {
+				isConnected = await this.s3Client.testConnection();
+			}
+			
 			this.statusBar.setStatus('idle');
 			return isConnected;
 		} catch (error) {
@@ -181,6 +214,16 @@ export default class DementorSyncPlugin extends Plugin {
 			this.statusBar.setStatus('error');
 			throw error;
 		}
+	}
+	
+	// Новый метод для диагностики соединения в зависимости от выбранного метода
+	async diagnoseConnection(): Promise<string> {
+		if (this.settings.syncMethod === 'webdav') {
+			return await this.webdavClient.diagnoseBadConnection();
+		} else if (this.settings.syncMethod === 's3') {
+			return await this.s3Client.diagnoseBadConnection();
+		}
+		return "Unknown sync method selected";
 	}
 	
 	async resetSyncState() {
@@ -203,6 +246,8 @@ export default class DementorSyncPlugin extends Plugin {
 
 class DementorSyncSettingTab extends PluginSettingTab {
 	plugin: DementorSyncPlugin;
+	webdavSettingsEl: HTMLElement;
+	s3SettingsEl: HTMLElement;
 
 	constructor(app: App, plugin: DementorSyncPlugin) {
 		super(app, plugin);
@@ -215,78 +260,37 @@ class DementorSyncSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl('h2', { text: 'Dementor Sync Settings' });
 
-		// WebDAV Server Settings
-		containerEl.createEl('h3', { text: 'WebDAV Server' });
-		
+			// Выбор метода синхронизации
 		new Setting(containerEl)
-			.setName('WebDAV URL')
-			.setDesc('URL of your WebDAV server (e.g., https://example.com/webdav/)')
-			.addText(text => text
-				.setPlaceholder('https://example.com/webdav/')
-				.setValue(this.plugin.settings.webdavUrl)
-				.onChange(async (value: string) => {
-					this.plugin.settings.webdavUrl = value.trim();
-					await this.plugin.saveSettings();
-				}));
-				
-		new Setting(containerEl)
-			.setName('WebDAV Username')
-			.setDesc('Username for WebDAV authentication')
-			.addText(text => text
-				.setPlaceholder('username')
-				.setValue(this.plugin.settings.webdavUsername)
-				.onChange(async (value: string) => {
-					this.plugin.settings.webdavUsername = value.trim();
-					await this.plugin.saveSettings();
-				}));
-				
-		new Setting(containerEl)
-			.setName('WebDAV Password')
-			.setDesc('Password for WebDAV authentication')
-			.addText(text => {
-				text.setPlaceholder('password')
-					.setValue(this.plugin.settings.webdavPassword)
-					.onChange(async (value: string) => {
-						this.plugin.settings.webdavPassword = value;
+			.setName('Sync Method')
+			.setDesc('Choose how to synchronize your vault')
+			.addDropdown(dropdown => {
+				dropdown
+					.addOption('webdav', 'WebDAV')
+					.addOption('s3', 'S3 Storage (Amazon S3, MinIO, Ceph)')
+					.setValue(this.plugin.settings.syncMethod)
+					.onChange(async (value: SyncMethod) => {
+						this.plugin.settings.syncMethod = value;
 						await this.plugin.saveSettings();
+						
+						// Перезагрузка интерфейса для отображения соответствующих настроек
+						this.updateSettingsVisibility();
 					});
-				text.inputEl.type = 'password';
-				return text;
 			});
+
+		// Создаем контейнеры для настроек разных методов синхронизации
+		this.webdavSettingsEl = containerEl.createDiv();
+		this.s3SettingsEl = containerEl.createDiv();
 		
-		new Setting(containerEl)
-			.setName('Test Connection')
-			.setDesc('Test the connection to your WebDAV server')
-			.addButton(button => button
-				.setButtonText('Test')
-				.setCta()
-				.onClick(async () => {
-					try {
-						button.setDisabled(true);
-						button.setButtonText('Testing...');
-						
-						// First try normal connection
-						const isConnected = await this.plugin.testConnection();
-						
-						if (isConnected) {
-							new Notice('Connection to WebDAV server successful!');
-						} else {
-							// If failed, run diagnostics
-							button.setButtonText('Diagnosing...');
-							const diagnosticResult = await this.plugin.webdavClient.diagnoseBadConnection();
-							
-							// Display detailed error in a persistent notice
-							new Notice(`Connection to WebDAV server failed: ${diagnosticResult}`, 10000);
-							console.error('WebDAV connection diagnostic:', diagnosticResult);
-						}
-					} catch (error) {
-						new Notice(`Connection test failed: ${error.message}`, 10000);
-					} finally {
-						button.setDisabled(false);
-						button.setButtonText('Test');
-					}
-				}));
+		// WebDAV настройки
+		this.createWebDAVSettings(this.webdavSettingsEl);
 		
+		// S3 настройки
+		this.createS3Settings(this.s3SettingsEl);
+		
+		// Обновляем видимость настроек в зависимости от выбранного метода
+		this.updateSettingsVisibility();
+
 		// Encryption Settings
 		containerEl.createEl('h3', { text: 'Encryption' });
 		
@@ -377,5 +381,175 @@ class DementorSyncSettingTab extends PluginSettingTab {
 					await this.plugin.resetSyncState();
 					button.setDisabled(false);
 				}));
+	}
+
+	// Создание настроек WebDAV
+	createWebDAVSettings(containerEl: HTMLElement): void {
+		containerEl.createEl('h3', { text: 'WebDAV Server' });
+		
+		new Setting(containerEl)
+			.setName('WebDAV URL')
+			.setDesc('URL of your WebDAV server (e.g., https://example.com/webdav/)')
+			.addText(text => text
+				.setPlaceholder('https://example.com/webdav/')
+				.setValue(this.plugin.settings.webdavUrl)
+				.onChange(async (value: string) => {
+					this.plugin.settings.webdavUrl = value.trim();
+					await this.plugin.saveSettings();
+				}));
+				
+		new Setting(containerEl)
+			.setName('WebDAV Username')
+			.setDesc('Username for WebDAV authentication')
+			.addText(text => text
+				.setPlaceholder('username')
+				.setValue(this.plugin.settings.webdavUsername)
+				.onChange(async (value: string) => {
+					this.plugin.settings.webdavUsername = value.trim();
+					await this.plugin.saveSettings();
+				}));
+				
+		new Setting(containerEl)
+			.setName('WebDAV Password')
+			.setDesc('Password for WebDAV authentication')
+			.addText(text => {
+				text.setPlaceholder('password')
+					.setValue(this.plugin.settings.webdavPassword)
+					.onChange(async (value: string) => {
+						this.plugin.settings.webdavPassword = value;
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.type = 'password';
+				return text;
+			});
+		
+		new Setting(containerEl)
+			.setName('Test Connection')
+			.setDesc('Test the connection to your WebDAV server')
+			.addButton(button => button
+				.setButtonText('Test')
+				.setCta()
+				.onClick(async () => {
+					try {
+						button.setDisabled(true);
+						button.setButtonText('Testing...');
+						
+						// First try normal connection
+						const isConnected = await this.plugin.testConnection();
+						
+						if (isConnected) {
+							new Notice('Connection to WebDAV server successful!');
+						} else {
+							// If failed, run diagnostics
+							button.setButtonText('Diagnosing...');
+							const diagnosticResult = await this.plugin.diagnoseConnection();
+							
+							// Display detailed error in a persistent notice
+							new Notice(`Connection to WebDAV server failed: ${diagnosticResult}`, 10000);
+							console.error('WebDAV connection diagnostic:', diagnosticResult);
+						}
+					} catch (error) {
+						new Notice(`Connection test failed: ${error.message}`, 10000);
+					} finally {
+						button.setDisabled(false);
+						button.setButtonText('Test');
+					}
+				}));
+	}
+
+	// Создание настроек S3
+	createS3Settings(containerEl: HTMLElement): void {
+		containerEl.createEl('h3', { text: 'S3 Storage' });
+		
+		new Setting(containerEl)
+			.setName('S3 Endpoint URL')
+			.setDesc('URL of your S3-compatible storage (e.g., https://s3.region.amazonaws.com)')
+			.addText(text => text
+				.setPlaceholder('https://s3.ru1.storage.beget.cloud')
+				.setValue(this.plugin.settings.s3Url)
+				.onChange(async (value: string) => {
+					this.plugin.settings.s3Url = value.trim();
+					await this.plugin.saveSettings();
+				}));
+				
+		new Setting(containerEl)
+			.setName('Bucket Name')
+			.setDesc('Name of the S3 bucket to use for storage')
+			.addText(text => text
+				.setPlaceholder('8e10dc63a3f6-narrow-kenji')
+				.setValue(this.plugin.settings.s3Bucket)
+				.onChange(async (value: string) => {
+					this.plugin.settings.s3Bucket = value.trim();
+					await this.plugin.saveSettings();
+				}));
+				
+		new Setting(containerEl)
+			.setName('Access Key')
+			.setDesc('S3 Access Key ID')
+			.addText(text => text
+				.setPlaceholder('P3TTI5AT7WCSOTZJ1WK1')
+				.setValue(this.plugin.settings.s3AccessKey)
+				.onChange(async (value: string) => {
+					this.plugin.settings.s3AccessKey = value.trim();
+					await this.plugin.saveSettings();
+				}));
+				
+		new Setting(containerEl)
+			.setName('Secret Key')
+			.setDesc('S3 Secret Access Key')
+			.addText(text => {
+				text.setPlaceholder('eBcQQ4mLgHdLxRARVChrynGcYKIEdZjkxPApqtta')
+					.setValue(this.plugin.settings.s3SecretKey)
+					.onChange(async (value: string) => {
+						this.plugin.settings.s3SecretKey = value;
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.type = 'password';
+				return text;
+			});
+		
+		new Setting(containerEl)
+			.setName('Test Connection')
+			.setDesc('Test the connection to your S3 storage')
+			.addButton(button => button
+				.setButtonText('Test')
+				.setCta()
+				.onClick(async () => {
+					try {
+						button.setDisabled(true);
+						button.setButtonText('Testing...');
+						
+						// First try normal connection
+						const isConnected = await this.plugin.testConnection();
+						
+						if (isConnected) {
+							new Notice('Connection to S3 storage successful!');
+						} else {
+							// If failed, run diagnostics
+							button.setButtonText('Diagnosing...');
+							const diagnosticResult = await this.plugin.diagnoseConnection();
+							
+							// Display detailed error in a persistent notice
+							new Notice(`Connection to S3 storage failed: ${diagnosticResult}`, 10000);
+							console.error('S3 connection diagnostic:', diagnosticResult);
+						}
+					} catch (error) {
+						new Notice(`Connection test failed: ${error.message}`, 10000);
+					} finally {
+						button.setDisabled(false);
+						button.setButtonText('Test');
+					}
+				}));
+	}
+
+	// Обновляем видимость настроек в зависимости от выбранного метода синхронизации
+	updateSettingsVisibility(): void {
+		if (this.plugin.settings.syncMethod === 'webdav') {
+			this.webdavSettingsEl.style.display = 'block';
+			this.s3SettingsEl.style.display = 'none';
+		} else if (this.plugin.settings.syncMethod === 's3') {
+			this.webdavSettingsEl.style.display = 'none';
+			this.s3SettingsEl.style.display = 'block';
+		}
 	}
 }
