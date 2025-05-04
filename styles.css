@@ -1,0 +1,52 @@
+/* Dementor Sync Plugin Styles */
+
+/* Status Bar */
+.dementor-sync-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    cursor: pointer;
+}
+
+.dementor-sync-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dementor-sync-text {
+    font-size: 12px;
+}
+
+.dementor-sync-active {
+    color: var(--interactive-accent);
+}
+
+.dementor-sync-error {
+    color: var(--text-error);
+}
+
+/* Animation for sync icon */
+@keyframes dementor-sync-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Settings */
+.dementor-sync-warning {
+    margin-bottom: 1em;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: rgba(255, 0, 0, 0.1);
+    border-left: 3px solid var(--text-error);
+}
+
+/* Make excluded paths input taller */
+.dementor-sync-excluded-paths input {
+    height: 3.5em;
+}

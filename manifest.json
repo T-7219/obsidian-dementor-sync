@@ -1,0 +1,10 @@
+{
+    "id": "dementor-sync",
+    "name": "Dementor Sync",
+    "version": "1.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "Secure vault synchronization through WebDAV with end-to-end encryption",
+    "author": "Your Name",
+    "authorUrl": "https://github.com/T-7219",
+    "isDesktopOnly": false
+}
