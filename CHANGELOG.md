@@ -12,6 +12,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Selective sync for specific folders
 - Performance optimizations for large vaults
 
+## [1.0.1] - 2025-05-04
+
+### 🐛 Fixed
+- Fixed connection issues with Yandex.WebDAV servers
+- Added special path handling for Yandex.WebDAV using the `disk:/` prefix
+- Enhanced connection diagnostics with more detailed error reporting
+- Improved error notification display time for better readability
+- Added direct HTTP connection testing for authentication problem detection
+
+### ✨ Improved
+- Automatic detection of Yandex.WebDAV services from the URL
+- Optimized path structure for Yandex.WebDAV using `disk:/ObsidianSync/`
+- Increased timeout thresholds for more stable operation on slow connections
+- Better error handling for root directory creation operations
+- Added extended diagnostics for WebDAV connection troubleshooting
+- Updated documentation with Yandex.WebDAV specific configuration details
+
 ## [1.0.0] - 2025-05-04
 
 ### ✨ Added

@@ -5,7 +5,11 @@ import type DementorSyncPlugin from './main';
 export class WebDAVClient {
     private client: WebDAVClientType | null = null;
     private plugin: DementorSyncPlugin;
+    // Make basePath configurable with a default
     private basePath: string = '/dementor-sync/';
+    
+    // Yandex WebDAV requires specific handling
+    private isYandexWebDAV: boolean = false;
 
     constructor(plugin: DementorSyncPlugin) {
         this.plugin = plugin;
@@ -19,9 +23,25 @@ export class WebDAVClient {
             // Make sure URL ends with a trailing slash
             const url = webdavUrl.endsWith('/') ? webdavUrl : webdavUrl + '/';
             
+            // Check if this is Yandex WebDAV
+            this.isYandexWebDAV = url.includes('webdav.yandex');
+            
+            // For Yandex WebDAV, use a special path structure
+            if (this.isYandexWebDAV) {
+                // Yandex WebDAV works better with disk:/ prefix
+                this.basePath = 'disk:/ObsidianSync/';
+                console.log('Yandex WebDAV detected, using special path:', this.basePath);
+            } else {
+                this.basePath = '/dementor-sync/';
+            }
+            
+            // Configure the client with authentication
             this.client = createClient(url, {
                 username: webdavUsername,
-                password: webdavPassword
+                password: webdavPassword,
+                // Add a longer timeout for slower connections
+                maxBodyLength: 100 * 1024 * 1024, // 100 MB
+                maxContentLength: 100 * 1024 * 1024 // 100 MB
             });
             
             console.log('WebDAV client configured');
@@ -53,6 +73,96 @@ export class WebDAVClient {
         } catch (error) {
             console.error('WebDAV connection test failed:', error);
             return false;
+        }
+    }
+
+    // New diagnostic function for detailed connection testing
+    public async diagnoseBadConnection(): Promise<string> {
+        try {
+            const { webdavUrl, webdavUsername, webdavPassword } = this.plugin.settings;
+            
+            if (!webdavUrl || !webdavUsername || !webdavPassword) {
+                return "Missing WebDAV configuration (URL, username, or password)";
+            }
+            
+            // For Yandex, try special direct test first
+            if (webdavUrl.includes('webdav.yandex')) {
+                const yandexResult = await this.testYandexWebDAV();
+                if (!yandexResult.includes('successful')) {
+                    return `Yandex WebDAV test: ${yandexResult}`;
+                }
+            }
+            
+            // Test connection to the root first (without our basePath)
+            try {
+                const url = webdavUrl.endsWith('/') ? webdavUrl : webdavUrl + '/';
+                const rootClient = createClient(url, {
+                    username: webdavUsername,
+                    password: webdavPassword
+                });
+                
+                // Just try to check the root exists
+                await rootClient.exists('/');
+                console.log('Connection to WebDAV root successful');
+            } catch (rootError) {
+                return `Cannot connect to WebDAV root: ${rootError.message || 'Unknown error'}. Check URL, username and password.`;
+            }
+            
+            // If we got here, root connection works, so the issue is with the path
+            try {
+                this.ensureClient();
+                await this.client!.exists(this.basePath);
+            } catch (pathError) {
+                return `Connected to server, but cannot access path ${this.basePath}: ${pathError.message || 'Unknown error'}`;
+            }
+            
+            // Test creating directory
+            try {
+                await this.client!.createDirectory(this.basePath);
+            } catch (dirError) {
+                return `Connected to server, but cannot create directory ${this.basePath}: ${dirError.message || 'Unknown error'}`;
+            }
+            
+            return "All diagnostics passed successfully. If you still have issues, try with a different base path.";
+        } catch (error) {
+            return `Diagnostic error: ${error.message || 'Unknown error'}`;
+        }
+    }
+
+    // New method to test Yandex.WebDAV with direct HTTP request
+    public async testYandexWebDAV(): Promise<string> {
+        try {
+            const { webdavUrl, webdavUsername, webdavPassword } = this.plugin.settings;
+            
+            if (!webdavUrl || !webdavUsername || !webdavPassword) {
+                return "Missing WebDAV configuration";
+            }
+
+            // Test with direct HTTP request using Obsidian's requestUrl
+            try {
+                const url = webdavUrl.endsWith('/') ? webdavUrl : webdavUrl + '/';
+                
+                // Use PROPFIND method to check server availability
+                const response = await requestUrl({
+                    url: url,
+                    method: 'PROPFIND',
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(webdavUsername + ':' + webdavPassword),
+                        'Depth': '0',
+                        'Content-Type': 'application/xml'
+                    }
+                });
+                
+                if (response.status >= 200 && response.status < 300) {
+                    return `Server responded with status ${response.status}. Connection successful!`;
+                } else {
+                    return `Server responded with error status ${response.status}: ${response.text}`;
+                }
+            } catch (httpError) {
+                return `HTTP request failed: ${httpError.message}. This might indicate network issues or server unavailability.`;
+            }
+        } catch (error) {
+            return `Test error: ${error.message || 'Unknown error'}`;
         }
     }
 

@@ -1,6 +1,6 @@
 {
   "name": "obsidian-dementor-sync",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Secure vault synchronization through WebDAV with end-to-end encryption for Obsidian",
   "main": "main.js",
   "scripts": {

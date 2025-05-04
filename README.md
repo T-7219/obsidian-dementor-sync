@@ -33,7 +33,7 @@ Secure your knowledge with the most private and secure synchronization solution 
   <tr>
     <td width="50%">
       <h3>🌐 WebDAV Compatibility</h3>
-      <p>Works with any WebDAV server including Nextcloud, ownCloud, Box, or your personal server.</p>
+      <p>Works with any WebDAV server including Nextcloud, ownCloud, Box, Yandex.Disk, or your personal server.</p>
     </td>
     <td width="50%">
       <h3>⚡ Real-time Change Detection</h3>
@@ -57,10 +57,12 @@ Secure your knowledge with the most private and secure synchronization solution 
 - [Usage](#-usage)
 - [Configuration](#-configuration)
 - [Security Features](#-security-features)
+- [Supported WebDAV Services](#-supported-webdav-services)
 - [FAQ](#-frequently-asked-questions)
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
 - [License](#-license)
+- [Changelog](#-changelog)
 
 ## 🔧 Installation
 
@@ -90,6 +92,7 @@ Secure your knowledge with the most private and secure synchronization solution 
    - Enter your WebDAV server URL and credentials
    - Create a strong encryption password (critical for data security!)
    - Configure sync settings and exclusions
+   - Test your connection to ensure everything is working correctly
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/T-7219/obsidian-dementor-sync/main/assets/screenshots/setup.png" alt="Setup Screen" width="70%"/>
@@ -112,6 +115,15 @@ Secure your knowledge with the most private and secure synchronization solution 
 | **Sync on Startup** | Whether to sync when Obsidian launches |
 | **Sync Attachments** | Whether to sync attachment files |
 
+### Connection Diagnostics
+
+If you're having trouble connecting to your WebDAV server, the plugin now offers enhanced diagnostics:
+
+1. Go to **Settings** → **Dementor Sync**
+2. Click the **Test Connection** button to run a comprehensive diagnostics check
+3. The plugin will display detailed information about any connection issues
+4. Use the diagnostic information to troubleshoot and resolve connection problems
+
 ## 🛡️ Security Features
 
 - **End-to-End Encryption**: Your data is encrypted locally before transmission
@@ -119,6 +131,29 @@ Secure your knowledge with the most private and secure synchronization solution 
 - **Modern Cryptography**: AES-256-GCM for encryption, Argon2id for key derivation
 - **Encrypted Filenames**: Even filenames are encrypted to protect your privacy
 - **No Telemetry**: Your data and usage patterns are never tracked or reported
+
+## 🔄 Supported WebDAV Services
+
+Dementor Sync works with a wide range of WebDAV services, including specific optimizations for:
+
+### Yandex.Disk
+- Automatically detects Yandex.WebDAV servers
+- Uses the appropriate path structure (`disk:/ObsidianSync/`)
+- Implements extended error handling for Yandex-specific responses
+- **URL**: `https://webdav.yandex.ru`
+
+### Nextcloud/ownCloud
+- Standard WebDAV compatibility
+- **URL format**: `https://your-nextcloud-instance.com/remote.php/webdav/`
+
+### Box
+- Standard WebDAV compatibility
+- **URL format**: `https://dav.box.com/dav`
+
+### Generic WebDAV Servers
+- Compatible with any server following the WebDAV standard
+- Adjustable timeouts for slower connections
+- Detailed connection diagnostics
 
 ## ❓ Frequently Asked Questions
 
@@ -139,7 +174,17 @@ No, you should use either Dementor Sync or Obsidian Sync, but not both simultane
 
 <details>
 <summary><b>What WebDAV providers are recommended?</b></summary>
-We recommend Nextcloud (self-hosted or through a provider), pCloud, or Box for their reliable WebDAV implementations.
+We recommend Nextcloud (self-hosted or through a provider), pCloud, Box, or Yandex.Disk for their reliable WebDAV implementations.
+</details>
+
+<details>
+<summary><b>I'm having connection issues with Yandex.WebDAV, what should I do?</b></summary>
+The plugin now features enhanced diagnostics for Yandex.WebDAV connections. Test your connection in settings and check the detailed error messages. Make sure you're using the correct URL (https://webdav.yandex.ru) and valid credentials.
+</details>
+
+<details>
+<summary><b>Why am I getting path-related errors with WebDAV?</b></summary>
+Different WebDAV servers handle paths differently. As of v1.0.1, the plugin automatically detects specific providers (like Yandex.WebDAV) and adjusts path handling accordingly.
 </details>
 
 ## 🗺️ Roadmap
@@ -150,6 +195,7 @@ We recommend Nextcloud (self-hosted or through a provider), pCloud, or Box for t
 - [ ] Additional encryption options
 - [ ] Sync statistics and monitoring dashboard
 - [ ] Self-contained versioning system
+- [ ] Support for additional cloud storage providers
 
 ## 🤝 Contributing
 
@@ -164,6 +210,10 @@ Contributions are welcome and appreciated! See [CONTRIBUTING.md](CONTRIBUTING.md
 ## 📄 License
 
 This project is licensed under the [Creative Commons Attribution 4.0 International License (CC BY 4.0)](LICENSE).
+
+## 📋 Changelog
+
+For a detailed list of changes in each version, please see the [CHANGELOG.md](CHANGELOG.md) file.
 
 ---
 

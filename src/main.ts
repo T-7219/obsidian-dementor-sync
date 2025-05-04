@@ -265,15 +265,22 @@ class DementorSyncSettingTab extends PluginSettingTab {
 						button.setDisabled(true);
 						button.setButtonText('Testing...');
 						
+						// First try normal connection
 						const isConnected = await this.plugin.testConnection();
 						
 						if (isConnected) {
 							new Notice('Connection to WebDAV server successful!');
 						} else {
-							new Notice('Connection to WebDAV server failed. Please check your settings.');
+							// If failed, run diagnostics
+							button.setButtonText('Diagnosing...');
+							const diagnosticResult = await this.plugin.webdavClient.diagnoseBadConnection();
+							
+							// Display detailed error in a persistent notice
+							new Notice(`Connection to WebDAV server failed: ${diagnosticResult}`, 10000);
+							console.error('WebDAV connection diagnostic:', diagnosticResult);
 						}
 					} catch (error) {
-						new Notice(`Connection test failed: ${error.message}`);
+						new Notice(`Connection test failed: ${error.message}`, 10000);
 					} finally {
 						button.setDisabled(false);
 						button.setButtonText('Test');
