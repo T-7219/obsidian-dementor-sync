@@ -69,8 +69,11 @@ export class WebDAVClient {
             // Get directory contents
             const contents = await this.client!.getDirectoryContents(this.basePath);
             
+            // Handle both array and response data detailed formats
+            const items = Array.isArray(contents) ? contents : contents.data;
+            
             // Filter out directories, we only want files
-            return contents.filter(item => !item.type.includes('directory')) as FileStat[];
+            return items.filter((item: FileStat) => !item.type.includes('directory')) as FileStat[];
         } catch (error) {
             console.error('Failed to list files from WebDAV:', error);
             throw new Error(`Failed to list files: ${error.message}`);

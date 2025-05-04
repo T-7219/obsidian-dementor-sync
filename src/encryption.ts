@@ -39,7 +39,8 @@ export class EncryptionModule {
             });
 
             // Import the derived key into the WebCrypto API
-            const material = Buffer.from(result.hash, 'hex');
+            // Fix: Convert Uint8Array to Buffer properly
+            const material = new Uint8Array(result.hash);
             const key = await crypto.subtle.importKey(
                 'raw',
                 material,

@@ -38,8 +38,8 @@ export default class DementorSyncPlugin extends Plugin {
 
 			if (!this.settings.webdavUrl || !this.settings.webdavUsername || !this.settings.webdavPassword || !this.settings.encryptionPassword) {
 				new Notice('Please configure Dementor Sync settings first');
-				this.app.setting.open();
-				this.app.setting.openTabById('dementor-sync');
+					// Open settings
+				this.openSettingTab();
 				return;
 			}
 
@@ -192,6 +192,13 @@ export default class DementorSyncPlugin extends Plugin {
 			new Notice(`Dementor Sync: Failed to reset sync state - ${error.message}`);
 		}
 	}
+	
+	openSettingTab() {
+			// Use a type assertion to work around the TypeScript error
+			// This is a common pattern when the TypeScript definitions don't match the actual API
+			const appWithSetting = this.app as any;
+			appWithSetting.setting.open();
+		}
 }
 
 class DementorSyncSettingTab extends PluginSettingTab {
@@ -217,7 +224,7 @@ class DementorSyncSettingTab extends PluginSettingTab {
 			.addText(text => text
 				.setPlaceholder('https://example.com/webdav/')
 				.setValue(this.plugin.settings.webdavUrl)
-				.onChange(async (value) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.webdavUrl = value.trim();
 					await this.plugin.saveSettings();
 				}));
@@ -228,7 +235,7 @@ class DementorSyncSettingTab extends PluginSettingTab {
 			.addText(text => text
 				.setPlaceholder('username')
 				.setValue(this.plugin.settings.webdavUsername)
-				.onChange(async (value) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.webdavUsername = value.trim();
 					await this.plugin.saveSettings();
 				}));
@@ -236,14 +243,16 @@ class DementorSyncSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('WebDAV Password')
 			.setDesc('Password for WebDAV authentication')
-			.addText(text => text
-				.setPlaceholder('password')
-				.setValue(this.plugin.settings.webdavPassword)
-				.setType('password')
-				.onChange(async (value) => {
-					this.plugin.settings.webdavPassword = value;
-					await this.plugin.saveSettings();
-				}));
+			.addText(text => {
+				text.setPlaceholder('password')
+					.setValue(this.plugin.settings.webdavPassword)
+					.onChange(async (value: string) => {
+						this.plugin.settings.webdavPassword = value;
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.type = 'password';
+				return text;
+			});
 		
 		new Setting(containerEl)
 			.setName('Test Connection')
@@ -285,22 +294,28 @@ class DementorSyncSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Encryption Password')
 			.setDesc('Password used to encrypt your data (never sent to the server)')
-			.addText(text => text
-				.setPlaceholder('secure encryption password')
-				.setValue(this.plugin.settings.encryptionPassword)
-				.setType('password')
-				.onChange(async (value) => {
-					this.plugin.settings.encryptionPassword = value;
-					await this.plugin.saveSettings();
-				}));
+			.addText(text => {
+				text.setPlaceholder('secure encryption password')
+					.setValue(this.plugin.settings.encryptionPassword)
+					.onChange(async (value: string) => {
+						this.plugin.settings.encryptionPassword = value;
+						await this.plugin.saveSettings();
+					});
+				// Fix: Set input type directly on the element
+				text.inputEl.type = 'password';
+				return text;
+			});
 		
 		new Setting(containerEl)
 			.setName('Confirm Password')
 			.setDesc('Confirm your encryption password')
-			.addText(text => text
-				.setPlaceholder('confirm password')
-				.setValue(this.plugin.settings.encryptionPassword)
-				.setType('password'));
+			.addText(text => {
+				text.setPlaceholder('confirm password')
+					.setValue(this.plugin.settings.encryptionPassword);
+				// Fix: Set input type directly on the element
+				text.inputEl.type = 'password';
+				return text;
+			});
 		
 		// Sync Settings
 		containerEl.createEl('h3', { text: 'Synchronization' });

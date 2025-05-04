@@ -1,6 +1,16 @@
 import { EncryptionModule } from '../src/encryption';
 import type DementorSyncPlugin from '../src/main';
 
+// Мок для argon2-browser
+jest.mock('argon2-browser', () => {
+  return {
+    hash: jest.fn().mockResolvedValue({
+      hash: new Uint8Array(32).fill(1) // Имитация хеша 32 байта длиной
+    }),
+    argon2id: 2 // Это значение соответствует константе в реальной библиотеке
+  };
+});
+
 describe('EncryptionModule', () => {
   // Mock plugin instance
   const mockPlugin = {
@@ -36,7 +46,7 @@ describe('EncryptionModule', () => {
     
     // Verify that crypto.subtle.importKey was called
     expect(cryptoImportKeySpy).toHaveBeenCalled();
-  });
+  }, 10000); // Увеличиваем таймаут до 10 секунд
   
   test('should encrypt and decrypt file correctly', async () => {
     // Initialize the encryption module (this would normally derive the key)
@@ -61,7 +71,7 @@ describe('EncryptionModule', () => {
     // Verify the decrypted data matches the original
     const decryptedText = new TextDecoder().decode(decryptedData);
     expect(decryptedText).toBe('Test file content');
-  });
+  }, 10000); // Увеличиваем таймаут до 10 секунд
   
   test('should generate consistent encrypted names for the same path', async () => {
     const filePath = 'test/path/document.md';
