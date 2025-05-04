@@ -1,98 +1,178 @@
-# Dementor Sync for Obsidian
+# Dementor Sync for Obsidian 🔐
 
-[![GitHub license](https://img.shields.io/badge/license-CC%20BY%204.0-blue.svg)](LICENSE)
-[![GitHub release](https://img.shields.io/github/v/release/T-7219/obsidian-dementor-sync.svg)](https://github.com/T-7219/obsidian-dementor-sync/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/T-7219/obsidian-dementor-sync/total.svg)](https://github.com/T-7219/obsidian-dementor-sync/releases)
+<div align="center">
 
-Dementor Sync is an Obsidian plugin that provides secure vault synchronization through WebDAV with end-to-end encryption.
+![Dementor Sync Banner](https://raw.githubusercontent.com/T-7219/obsidian-dementor-sync/main/assets/banner.png)
 
-## Features
+[![GitHub release](https://img.shields.io/github/v/release/T-7219/obsidian-dementor-sync?style=flat-square&color=4684b1)](https://github.com/T-7219/obsidian-dementor-sync/releases/latest)
+[![GitHub license](https://img.shields.io/github/license/T-7219/obsidian-dementor-sync?style=flat-square&color=4684b1)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/T-7219/obsidian-dementor-sync/total?color=4684b1&style=flat-square)](https://github.com/T-7219/obsidian-dementor-sync/releases)
+[![CodeFactor](https://img.shields.io/codefactor/grade/github/T-7219/obsidian-dementor-sync?style=flat-square)](https://www.codefactor.io/repository/github/T-7219/obsidian-dementor-sync)
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.7-blue?style=flat-square&color=3178c6)](https://www.typescriptlang.org/)
 
-- **Secure End-to-End Encryption** - All your data is encrypted locally before being sent to the server, using AES-256-GCM encryption.
-- **WebDAV Synchronization** - Seamlessly sync your vault with any WebDAV-compatible server.
-- **Bi-directional Sync** - Changes made locally or remotely are automatically detected and synchronized.
-- **Real-time Change Tracking** - Efficiently monitors and tracks file changes to minimize data transfer.
-- **User-Friendly Interface** - Simple setup and operation with clear status indications.
+</div>
 
-## Installation
+Secure your knowledge with the most private and secure synchronization solution for Obsidian. **Dementor Sync** provides end-to-end encrypted WebDAV synchronization to keep your notes private and securely accessible across all your devices.
 
-1. In Obsidian, navigate to **Settings** → **Community plugins** → **Browse**
-2. Search for "Dementor Sync" and install it
-3. Enable the plugin in the **Community plugins** section
+> [!TIP]
+> Unlike the official Obsidian Sync, Dementor Sync gives you **full control** over your data with true end-to-end encryption and your choice of WebDAV server!
+
+## ✨ Key Features
+
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🔒 Military-Grade Encryption</h3>
+      <p>AES-256-GCM encryption with Argon2id key derivation ensures your data is secure even if your WebDAV server is compromised.</p>
+    </td>
+    <td width="50%">
+      <h3>🔄 Bidirectional Sync</h3>
+      <p>Changes are seamlessly synchronized across all your devices, with intelligent conflict resolution to prevent data loss.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🌐 WebDAV Compatibility</h3>
+      <p>Works with any WebDAV server including Nextcloud, ownCloud, Box, or your personal server.</p>
+    </td>
+    <td width="50%">
+      <h3>⚡ Real-time Change Detection</h3>
+      <p>Instantly detects file changes and optimizes synchronization to minimize data transfer.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>📱 Desktop & Mobile Support</h3>
+      <p>Works seamlessly on all platforms Obsidian supports, including iOS and Android.</p>
+    </td>
+    <td width="50%">
+      <h3>🛠️ Customizable Settings</h3>
+      <p>Fine-tune sync behavior with exclude patterns, automatic sync intervals, and more.</p>
+    </td>
+  </tr>
+</table>
+
+## 📖 Table of Contents
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Configuration](#-configuration)
+- [Security Features](#-security-features)
+- [FAQ](#-frequently-asked-questions)
+- [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+## 🔧 Installation
+
+### From Community Plugins
+
+1. Open Obsidian and navigate to **Settings** → **Community plugins** → **Browse**
+2. Search for "Dementor Sync" and click **Install**
+3. Enable the plugin under **Installed plugins**
 
 ### Manual Installation
 
-1. Download the `main.js`, `styles.css`, and `manifest.json` files from the latest release
+<details>
+<summary>Click to expand manual installation steps</summary>
+
+1. Download the `main.js`, `styles.css`, and `manifest.json` files from the [latest release](https://github.com/T-7219/obsidian-dementor-sync/releases/latest)
 2. Create a folder called `dementor-sync` in your vault's `.obsidian/plugins/` directory
 3. Copy the downloaded files into the `dementor-sync` folder
-4. Enable the plugin in the **Community plugins** section of Obsidian settings
+4. Restart Obsidian and enable the plugin in **Settings** → **Community plugins**
 
-## Usage
+</details>
 
-1. After installation, click on the Dementor Sync icon in the left ribbon
-2. Go to plugin settings to configure your WebDAV server connection:
-   - Enter your WebDAV server URL
-   - Provide your WebDAV username and password
-   - Set an encryption password (critical for accessing your data!)
-   - Configure automatic sync interval if desired
-3. Use the ribbon button to manually trigger synchronization at any time
+## 🚀 Usage
 
-### Important Security Note
+1. After installation, a lock icon 🔒 will appear in your left sidebar
+2. Click the icon to open the Dementor Sync panel
+3. Configure your connection by clicking the ⚙️ icon or going to **Settings** → **Dementor Sync**:
+   - Enter your WebDAV server URL and credentials
+   - Create a strong encryption password (critical for data security!)
+   - Configure sync settings and exclusions
 
-Your encryption password is used to protect your data and is never transmitted to the server. If you lose this password, **your synchronized data cannot be recovered**. Please store this password securely!
+<div align="center">
+  <img src="https://raw.githubusercontent.com/T-7219/obsidian-dementor-sync/main/assets/screenshots/setup.png" alt="Setup Screen" width="70%"/>
+</div>
 
-## Configuration
+> [!IMPORTANT]
+> Your encryption password is used to protect your data and is **never** transmitted to the server. If you lose this password, your synchronized data cannot be recovered! Please store it securely.
 
-In the settings tab, you can configure:
+## ⚙️ Configuration
 
-- **WebDAV Server URL** - The address of your WebDAV server
-- **WebDAV Credentials** - Your username and password for the server
-- **Encryption Password** - The password used to encrypt your data
-- **Automatic Sync Interval** - How frequently the plugin should sync automatically
-- **Excluded Paths** - Specific files or folders to exclude from synchronization
+| Setting | Description |
+|---------|-------------|
+| **WebDAV URL** | The URL of your WebDAV server (including path) |
+| **Username** | Your WebDAV server username |
+| **Password** | Your WebDAV server password |
+| **Encryption Password** | Password for encrypting/decrypting your data |
+| **Auto-sync** | Toggle automatic synchronization |
+| **Sync Interval** | How often automatic sync occurs (in minutes) |
+| **Excluded Patterns** | Glob patterns for files to exclude from sync |
+| **Sync on Startup** | Whether to sync when Obsidian launches |
+| **Sync Attachments** | Whether to sync attachment files |
 
-## Privacy & Security
+## 🛡️ Security Features
 
-Dementor Sync is designed with security as a top priority:
+- **End-to-End Encryption**: Your data is encrypted locally before transmission
+- **Zero-Knowledge Design**: Your encryption keys never leave your device
+- **Modern Cryptography**: AES-256-GCM for encryption, Argon2id for key derivation
+- **Encrypted Filenames**: Even filenames are encrypted to protect your privacy
+- **No Telemetry**: Your data and usage patterns are never tracked or reported
 
-- All data is encrypted locally before transmission using AES-256-GCM
-- Your encryption key is derived from your password using Argon2id KDF
-- No data is ever transmitted in plain text
-- Your encryption password never leaves your device
+## ❓ Frequently Asked Questions
 
-## Development
+<details>
+<summary><b>Can I use multiple devices with the same vault?</b></summary>
+Yes! Just install Dementor Sync on each device and use the exact same encryption password.
+</details>
 
-This plugin is built using TypeScript and the Obsidian Plugin API.
+<details>
+<summary><b>What happens if I change my encryption password?</b></summary>
+Changing your encryption password requires re-encrypting all your data. Use the "Change Encryption Password" option in settings, which will handle this process automatically.
+</details>
 
-### Building
+<details>
+<summary><b>Is Dementor Sync compatible with the official Obsidian Sync?</b></summary>
+No, you should use either Dementor Sync or Obsidian Sync, but not both simultaneously for the same vault.
+</details>
 
-```bash
-# Clone this repository
-git clone https://github.com/T-7219/obsidian-dementor-sync.git
+<details>
+<summary><b>What WebDAV providers are recommended?</b></summary>
+We recommend Nextcloud (self-hosted or through a provider), pCloud, or Box for their reliable WebDAV implementations.
+</details>
 
-# Navigate into the project directory
-cd obsidian-dementor-sync
+## 🗺️ Roadmap
 
-# Install dependencies
-npm install
+- [ ] Version history and rollback functionality
+- [ ] Selective sync for specific folders
+- [ ] Improved conflict resolution with visual diffs
+- [ ] Additional encryption options
+- [ ] Sync statistics and monitoring dashboard
+- [ ] Self-contained versioning system
 
-# Build the plugin
-npm run build
-```
+## 🤝 Contributing
 
-### Contribution
+Contributions are welcome and appreciated! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create your feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add some amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
-## License
+## 📄 License
 
 This project is licensed under the [Creative Commons Attribution 4.0 International License (CC BY 4.0)](LICENSE).
 
-## Support
-
-If you encounter any issues or have questions, please file them in the [GitHub issue tracker](https://github.com/T-7219/obsidian-dementor-sync/issues).
-
 ---
 
-Made with ❤️ for the Obsidian community
+<div align="center">
+  <p>
+    <a href="https://github.com/T-7219/obsidian-dementor-sync/issues">Report Bug</a> •
+    <a href="https://github.com/T-7219/obsidian-dementor-sync/issues">Request Feature</a> •
+    <a href="https://ko-fi.com/t7219">Buy Me a Coffee</a>
+  </p>
+  <p>Made with ❤️ for the Obsidian community</p>
+</div>
 
