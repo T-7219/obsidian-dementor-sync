@@ -4,7 +4,7 @@
 
 ![Dementor Sync Banner](https://raw.githubusercontent.com/T-7219/obsidian-dementor-sync/main/assets/banner.png)
 
-[![GitHub release](https://img.shields.io/github/v/release/T-7219/obsidian-dementor-sync?style=flat-square&color=4684b1)](https://github.com/T-7219/obsidian-dementor-sync/releases/latest)
+[![GitHub release](https://img.shields.io/badge/version-v1.0.1-4684b1?style=flat-square)](https://github.com/T-7219/obsidian-dementor-sync/releases/latest)
 [![GitHub license](https://img.shields.io/github/license/T-7219/obsidian-dementor-sync?style=flat-square&color=4684b1)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/T-7219/obsidian-dementor-sync/total?color=4684b1&style=flat-square)](https://github.com/T-7219/obsidian-dementor-sync/releases)
 [![CodeFactor](https://img.shields.io/codefactor/grade/github/T-7219/obsidian-dementor-sync?style=flat-square)](https://www.codefactor.io/repository/github/T-7219/obsidian-dementor-sync)
