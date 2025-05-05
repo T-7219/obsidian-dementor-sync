@@ -99,12 +99,17 @@ export class S3Client {
         let headers: Record<string, string> = {
             'Host': host,
             'X-Amz-Date': amzDate,
-            'Content-Type': contentType || 'application/octet-stream',
             ...additionalHeaders
         };
+        
+        // Добавляем Content-Type только если он не пустой
+        if (contentType) {
+            headers['Content-Type'] = contentType;
+        }
 
-        // Канонический запрос
-        const canonicalUri = resource;
+        // Канонический запрос - правильно формируем URI
+        // Проверяем, начинается ли resource с /, если нет - добавляем
+        const canonicalUri = resource.startsWith('/') ? resource : `/${resource}`;
         const canonicalQueryString = '';
         
         // Сортировка заголовков для канонического запроса
@@ -226,67 +231,104 @@ export class S3Client {
         throw lastError || new Error("Неизвестная ошибка");
     }
 
-    public async testConnection(): Promise<boolean> {
+    /**
+     * Проверяет соединение с S3 хранилищем
+     * @returns true если соединение успешно, иначе выбрасывает ошибку
+     */
+    async testConnection(): Promise<boolean> {
         try {
             if (!this.ensureConfig()) {
-                return false;
+                throw new Error('S3 client not configured correctly');
             }
+
+            const host = this.getHost();
+            // Используем корневой путь для проверки доступа к бакету
+            const rootPath = '/';
+            const url = `https://${host}`;
             
-            // Формируем URL для проверки прав доступа к бакету
-            const headBucketUrl = `${this.config!.endpointUrl}${this.config!.bucket}`;
-            
-            // Используем HEAD-запрос для проверки доступа к бакету
-            const headers = this.getSignatureV4('HEAD', 'application/xml', '/');
-            
-            await this.executeWithRetry(() => requestUrl({
-                url: headBucketUrl,
-                method: 'HEAD',
-                headers: headers
-            }));
-            
-            // Проверяем наличие базовой директории
-            return await this.ensureBaseDirectoryExists();
+            // Создаем заголовки авторизации для S3
+            const headers = this.getSignatureV4('GET', '', rootPath, { 'max-keys': '1' });
+
+            const response = await fetch(url + '?max-keys=1', {
+                method: 'GET',
+                headers: headers,
+            });
+
+            if (!response.ok) {
+                // Получаем текст ошибки для более подробной информации
+                const errorText = await response.text();
+                throw new Error(`S3 connection test failed with status: ${response.status}. Error: ${errorText}`);
+            }
+
+            // Проверяем, что ответ содержит XML с описанием бакета
+            const responseText = await response.text();
+            if (!responseText.includes('<ListBucketResult') && !responseText.includes('<ListAllMyBucketsResult')) {
+                throw new Error(`S3 returned unexpected response: ${responseText}`);
+            }
+
+            return true;
         } catch (error) {
-            console.error('S3 тест соединения не удался:', error);
-            
-            // Логируем подробную информацию об ошибке
-            if (error.status) {
-                console.error(`HTTP статус: ${error.status}, Ответ: ${error.message}`);
-            }
-            
-            return false;
+            console.error("S3 connection test failed:", error);
+            throw error;
         }
     }
 
-    // Проверяет и создаёт базовую директорию, если её нет
-    private async ensureBaseDirectoryExists(): Promise<boolean> {
+    /**
+     * Проверяет существование базовой директории и создает её, если не существует
+     */
+    async ensureBaseDirectoryExists(): Promise<void> {
         try {
             if (!this.ensureConfig()) {
-                return false;
+                throw new Error('S3 client not configured correctly');
             }
-            
-            // В S3 нет настоящих директорий, поэтому создаём пустой файл-маркер директории
-            const directoryMarker = `${this.basePath}.keep`;
+
+            const host = this.getHost();
+            const markerFilePath = this.normalizeS3Path(`${this.config.basePath}/.marker`);
+            const url = `https://${host}${markerFilePath}`;
+
+            // Проверяем существование маркера директории
+            const getHeaders = this.getSignatureV4('HEAD', '', markerFilePath);
             
             try {
-                // Пробуем проверить существование маркера
-                await this.downloadFile('.keep', false);
-                // Если маркер существует, директория готова
-                return true;
-            } catch (error) {
-                // Маркер не найден, создаём его
-                if (error.message && error.message.includes('404')) {
-                    const emptyContent = new ArrayBuffer(0);
-                    await this.uploadFile('.keep', emptyContent, '.keep');
-                    return true;
-                } else {
-                    // Другая ошибка - пробрасываем
-                    throw error;
+                const checkResponse = await fetch(url, {
+                    method: 'HEAD',
+                    headers: getHeaders
+                });
+                
+                // Если маркер существует, значит директория уже создана
+                if (checkResponse.ok) {
+                    return;
                 }
+                
+                // Если статус не 404, то это непредвиденная ошибка
+                if (checkResponse.status !== 404) {
+                    throw new Error(`Unexpected status checking marker file: ${checkResponse.status}`);
+                }
+                
+                // Статус 404, нужно создать маркер директории
+            } catch (error) {
+                console.log("S3: Error checking marker file, will try to create it:", error);
+                // Продолжаем выполнение для создания маркера
             }
+
+            // Создаем пустой маркерный файл для обозначения директории
+            const putHeaders = this.getSignatureV4('PUT', 'application/octet-stream', markerFilePath);
+            
+            const putResponse = await fetch(url, {
+                method: 'PUT',
+                headers: putHeaders,
+                body: 'This is a directory marker file'
+            });
+
+            if (!putResponse.ok) {
+                const responseText = await putResponse.text();
+                throw new Error(`Failed to create marker file. Status: ${putResponse.status}. Response: ${responseText}`);
+            }
+            
+            console.log("S3: Created base directory marker file");
         } catch (error) {
-            console.error('Ошибка при проверке/создании базовой директории:', error);
-            return false;
+            console.error("S3: Error ensuring base directory:", error);
+            throw error;
         }
     }
 
