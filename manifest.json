@@ -1,7 +1,7 @@
 {
     "id": "dementor-sync",
     "name": "Dementor Sync",
-    "version": "2.0.0",
+    "version": "2.0.8",
     "minAppVersion": "0.15.0",
     "description": "Secure vault synchronization through WebDAV or S3 with end-to-end encryption",
     "author": "T-7219",

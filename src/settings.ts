@@ -13,6 +13,7 @@ export interface DementorSyncSettings {
     s3Bucket: string;
     s3AccessKey: string;
     s3SecretKey: string;
+    s3Region: string; // Добавлен параметр региона S3
     
     // Общие настройки
     encryptionPassword: string;
@@ -34,6 +35,7 @@ export const DEFAULT_SETTINGS: DementorSyncSettings = {
     s3Bucket: '',
     s3AccessKey: '',
     s3SecretKey: '',
+    s3Region: 'us-east-1', // Значение по умолчанию для региона
     
     // Общие настройки
     encryptionPassword: '',

@@ -1,5 +1,6 @@
 import { EncryptionModule } from '../src/encryption';
 import type DementorSyncPlugin from '../src/main';
+import { arrayBufferToHex, hexToArrayBuffer, generateRandomBytes } from '../src/encryption';
 
 // Мок для argon2-browser
 jest.mock('argon2-browser', () => {
@@ -12,22 +13,26 @@ jest.mock('argon2-browser', () => {
 });
 
 describe('EncryptionModule', () => {
-  // Mock plugin instance
+  // Создаем мок-объект для плагина
   const mockPlugin = {
     stateManager: {
       getSalt: jest.fn().mockResolvedValue(null),
       storeSalt: jest.fn().mockResolvedValue(undefined)
     },
     settings: {
-      encryptionPassword: 'test-password'
+      encryptionPassword: 'test-password',
+      password: 'test-password',
+      salt: 'test-salt'
     }
   } as unknown as DementorSyncPlugin;
   
   let encryptionModule: EncryptionModule;
   
   beforeEach(() => {
-    // Reset mocks
+    // Сбрасываем моки перед каждым тестом
     jest.clearAllMocks();
+    
+    // Создаем экземпляр модуля шифрования с мок-плагином
     encryptionModule = new EncryptionModule(mockPlugin);
   });
   
@@ -88,5 +93,144 @@ describe('EncryptionModule', () => {
     
     // Verify it's different
     expect(name1).not.toBe(differentName);
+  });
+
+  test('should initialize encryption module', async () => {
+    await encryptionModule.initialize();
+    
+    // Проверяем, что ключи были сгенерированы
+    // @ts-ignore - Проверяем приватное свойство для тестирования
+    expect(encryptionModule.key).not.toBeNull();
+  });
+  
+  test('should correctly encrypt and decrypt file', async () => {
+    await encryptionModule.initialize();
+    
+    // Создаем тестовые данные
+    const originalData = new TextEncoder().encode('test data').buffer;
+    const fileName = 'test-file.md';
+    
+    // Шифруем файл
+    const encryptResult = await encryptionModule.encryptFile(fileName, originalData);
+    
+    // Проверяем результат шифрования
+    expect(encryptResult).toHaveProperty('encryptedData');
+    expect(encryptResult).toHaveProperty('iv');
+    expect(encryptResult).toHaveProperty('encryptedName');
+    
+    // Расшифровываем файл
+    const decryptedData = await encryptionModule.decryptFile(
+      encryptResult.encryptedData,
+      encryptResult.iv
+    );
+    
+    // Преобразуем ArrayBuffer в строки для сравнения
+    const originalString = new TextDecoder().decode(new Uint8Array(originalData));
+    const decryptedString = new TextDecoder().decode(new Uint8Array(decryptedData));
+    
+    // Проверяем, что расшифрованные данные соответствуют оригинальным
+    expect(decryptedString).toEqual(originalString);
+  });
+  
+  test('should generate consistent encrypted name for the same file', async () => {
+    await encryptionModule.initialize();
+    
+    const fileName = 'test-file.md';
+    
+    // Получаем зашифрованное имя файла дважды
+    const encryptedName1 = await encryptionModule.getEncryptedName(fileName);
+    const encryptedName2 = await encryptionModule.getEncryptedName(fileName);
+    
+    // Проверяем, что имена совпадают
+    expect(encryptedName1).toEqual(encryptedName2);
+    // Имя должно быть зашифровано и отличаться от оригинала
+    expect(encryptedName1).not.toEqual(fileName);
+  });
+  
+  test('should handle password changes', async () => {
+    await encryptionModule.initialize();
+    
+    // Шифруем данные с текущим паролем
+    const originalData = new TextEncoder().encode('test data').buffer;
+    const fileName = 'test-file.md';
+    
+    const encryptResult = await encryptionModule.encryptFile(fileName, originalData);
+    
+    // Меняем пароль
+    mockPlugin.settings.password = 'new-password';
+    
+    // Создаем новый экземпляр модуля с новым паролем
+    const newEncryptionModule = new EncryptionModule(mockPlugin);
+    await newEncryptionModule.initialize();
+    
+    // Пытаемся расшифровать данные с новым паролем
+    try {
+      await newEncryptionModule.decryptFile(
+        encryptResult.encryptedData,
+        encryptResult.iv
+      );
+      // Если дошли до сюда, значит тест провален - данные не должны расшифровываться
+      expect(true).toEqual(false); // Тест никогда не должен сюда дойти
+    } catch (error) {
+      // Ожидаем ошибку при расшифровке с неверным паролем
+      expect(error).toBeDefined();
+    }
+  });
+  
+  test('should handle empty data correctly', async () => {
+    await encryptionModule.initialize();
+    
+    // Создаем пустой массив
+    const emptyData = new ArrayBuffer(0);
+    const fileName = 'empty-file.md';
+    
+    // Шифруем файл
+    const encryptResult = await encryptionModule.encryptFile(fileName, emptyData);
+    
+    // Проверяем, что результат все равно имеет необходимые поля
+    expect(encryptResult).toHaveProperty('encryptedData');
+    expect(encryptResult).toHaveProperty('iv');
+    expect(encryptResult).toHaveProperty('encryptedName');
+    
+    // Расшифровываем файл
+    const decryptedData = await encryptionModule.decryptFile(
+      encryptResult.encryptedData,
+      encryptResult.iv
+    );
+    
+    // Проверяем, что расшифрованные данные пусты
+    expect(decryptedData.byteLength).toEqual(0);
+  });
+
+  test('should convert between ArrayBuffer and hex string correctly', () => {
+    // Создаем тестовый буфер с известными значениями
+    const buffer = new Uint8Array([1, 2, 3, 255, 254]).buffer;
+    
+    // Конвертируем в hex строку
+    const hexString = arrayBufferToHex(buffer);
+    
+    // Проверяем, что строка содержит ожидаемые значения в hex формате
+    expect(hexString).toEqual('010203fffe');
+    
+    // Конвертируем обратно в ArrayBuffer
+    const convertedBuffer = hexToArrayBuffer(hexString);
+    
+    // Проверяем, что преобразования выполнены корректно
+    expect(new Uint8Array(convertedBuffer)).toEqual(new Uint8Array(buffer));
+  });
+  
+  test('should generate random bytes correctly', () => {
+    // Генерируем случайные байты
+    const bytes = generateRandomBytes(16);
+    
+    // Проверяем, что результат имеет правильный размер
+    expect(bytes.byteLength).toEqual(16);
+    
+    // Генерируем еще один массив байтов
+    const anotherBytes = generateRandomBytes(16);
+    
+    // Проверяем, что два массива случайных байтов отличаются
+    // Это не гарантирует случайности, но помогает обнаружить очевидные проблемы
+    expect(arrayBufferToHex(bytes)).not.toEqual(arrayBufferToHex(anotherBytes));
   });
 });

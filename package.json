@@ -1,7 +1,7 @@
 {
   "name": "obsidian-dementor-sync",
-  "version": "1.0.1",
-  "description": "Secure vault synchronization through WebDAV with end-to-end encryption for Obsidian",
+  "version": "2.0.8",
+  "description": "Secure vault synchronization through WebDAV or S3 with end-to-end encryption for Obsidian",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
@@ -15,7 +15,8 @@
     "sync",
     "webdav",
     "encryption",
-    "e2ee"
+    "e2ee",
+    "s3"
   ],
   "author": "",
   "license": "CC-BY-4.0",
@@ -35,8 +36,8 @@
   },
   "dependencies": {
     "argon2-browser": "^1.18.0",
-    "aws-sdk": "^2.1461.0",
     "buffer": "^6.0.3",
+    "crypto-js": "^4.2.0",
     "webdav": "^5.1.0"
   }
 }
