@@ -1,6 +1,23 @@
 import { EncryptionModule } from '../src/encryption';
 import type DementorSyncPlugin from '../src/main';
-import { arrayBufferToHex, hexToArrayBuffer, generateRandomBytes } from '../src/encryption';
+// import { arrayBufferToHex, hexToArrayBuffer, generateRandomBytes } from '../src/encryption'; // These are not in src/encryption.ts
+
+// Helper functions for tests - define them here as they are not exported by src/encryption.ts
+function arrayBufferToHex(buffer: ArrayBuffer): string {
+  return Array.prototype.map.call(new Uint8Array(buffer), (x: number) => ('00' + x.toString(16)).slice(-2)).join('');
+}
+
+function hexToArrayBuffer(hex: string): ArrayBuffer {
+  const typedArray = new Uint8Array(hex.match(/[\da-f]{2}/gi)!.map(h => parseInt(h, 16)));
+  return typedArray.buffer;
+}
+
+function generateRandomBytes(length: number): ArrayBuffer {
+  const buffer = new ArrayBuffer(length);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < length; i++) view[i] = Math.floor(Math.random() * 256);
+  return buffer;
+}
 
 // Мок для argon2-browser
 jest.mock('argon2-browser', () => {
@@ -111,7 +128,7 @@ describe('EncryptionModule', () => {
     const fileName = 'test-file.md';
     
     // Шифруем файл
-    const encryptResult = await encryptionModule.encryptFile(fileName, originalData);
+    const encryptResult = await encryptionModule.encryptFile(originalData, fileName); // Corrected argument order
     
     // Проверяем результат шифрования
     expect(encryptResult).toHaveProperty('encryptedData');
